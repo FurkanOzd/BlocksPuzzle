@@ -5,8 +5,8 @@ using System.Linq;
 
 public class LevelBuilder : MonoBehaviour
 {
-
     public int boardSize;
+    int _boardSize;
     int[,] vertices;
     public int pieceCount;
     [SerializeField] GameObject pointInstance;
@@ -14,7 +14,6 @@ public class LevelBuilder : MonoBehaviour
     int initialSize = 4;
     List<Triangle> triangles;
     [SerializeField] GameObject meshInstance;
-
     class Shape
     {
         public Color color;
@@ -103,7 +102,7 @@ public class LevelBuilder : MonoBehaviour
 
     private void Awake()
     {
-        boardSize = boardSize + 1;
+        _boardSize = boardSize + 1;
     }
 
 
@@ -114,49 +113,51 @@ public class LevelBuilder : MonoBehaviour
 
     void InitBoard()
     {
-        vertices = new int[boardSize, boardSize];
-        for (int i = 0; i < boardSize; i++)
+        vertices = new int[_boardSize, _boardSize];
+        for (int i = 0; i < _boardSize; i++)
         {
-            for (int j = 0; j < boardSize; j++)
+            for (int j = 0; j < _boardSize; j++)
             {
                 vertices[i, j] = 0;
             }
         }
 
         Vector3 startPoint = plane.GetChild(0).position;     // Init Board Points
-        for (int i = 0; i < boardSize; i++)
+        Vector3 endPoint = plane.GetChild(1).position;
+
+        for (int i = 0; i < _boardSize; i++)
         {
-            for (int j = 0; j < boardSize; j++)
+            for (int j = 0; j < _boardSize; j++)
             {
-                Instantiate(pointInstance, startPoint + transform.right * ((float)initialSize / boardSize) * j + transform.up * ((float)initialSize / boardSize) * -i, Quaternion.identity, transform);
+                Instantiate(pointInstance, startPoint + transform.right *((endPoint-startPoint).x/(_boardSize-1)) * j + transform.up * ((endPoint - startPoint).y / (_boardSize-1)) * i, Quaternion.identity, transform);
             }
         }
 
         triangles = new List<Triangle>();
-        for (int i = 0; i < transform.childCount - boardSize; i++)  //Create Triangles Based On Grid
+        for (int i = 0; i < transform.childCount - _boardSize; i++)  //Create Triangles Based On Grid
         {
-            if (i % boardSize == boardSize - 1)
+            if (i % _boardSize == _boardSize - 1)
             {
                 continue;
             }
             Vector3 p1 = transform.GetChild(i).position;
             Vector3 p2 = transform.GetChild(i + 1).position;
-            Vector3 p3 = (transform.GetChild(i + 1).position + transform.GetChild(i + boardSize).position) / 2;
+            Vector3 p3 = (transform.GetChild(i + 1).position + transform.GetChild(i + _boardSize).position) / 2;
             Material mat = meshInstance.GetComponent<MeshRenderer>().sharedMaterial;
             triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 1, 2 }, mat));
 
             p1 = transform.GetChild(i).position;
-            p2 = transform.GetChild(i + boardSize).position;
+            p2 = transform.GetChild(i + _boardSize).position;
 
             triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 1, 0, 2 }, mat));
 
             p1 = transform.GetChild(i + 1).position;
-            p2 = transform.GetChild(i + 1 + boardSize).position;
+            p2 = transform.GetChild(i + 1 + _boardSize).position;
 
             triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 1, 2 }, mat));
 
-            p1 = transform.GetChild(i + boardSize).position;
-            p2 = transform.GetChild(i + boardSize + 1).position;
+            p1 = transform.GetChild(i + _boardSize).position;
+            p2 = transform.GetChild(i + _boardSize + 1).position;
 
             triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }, mat));
 
@@ -177,7 +178,7 @@ public class LevelBuilder : MonoBehaviour
 
         for (int i = 0; i < shapes.Length; i++)
         {
-            shapes[i] = new Shape(new Color(Random.Range(0, 255), Random.Range(0, 255), Random.Range(0, 255),1), transform.GetChild(randomPositions[i]).position);
+            shapes[i] = new Shape(new Color(Random.Range(0, 255), Random.Range(0, 255), Random.Range(0, 255)), transform.GetChild(randomPositions[i]).position);
         }
 
 
@@ -197,14 +198,11 @@ public class LevelBuilder : MonoBehaviour
                 selectedShape.AddTriangleToShape(triangles[i].GetMeshFilter());
         }
 
-        int temp = 0;
-
         for (int i = 0; i < shapes.Length; i++)
         {
-            GameObject newObject = Instantiate(meshInstance, new Vector3(0, 0, -1), Quaternion.identity);
+            GameObject newObject = Instantiate(meshInstance, new Vector3(0, 0,-.1f), Quaternion.identity);
             newObject.GetComponent<MeshFilter>().mesh = shapes[i].GetMesh();
-
-            newObject.GetComponent<MeshRenderer>().material.SetColor("Standard", shapes[i].color);
+            newObject.GetComponent<MeshRenderer>().materials[0].color = Random.ColorHSV();
         }
 
     }
