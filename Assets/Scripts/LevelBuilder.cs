@@ -13,9 +13,10 @@ public class LevelBuilder : MonoBehaviour
     [SerializeField] Transform plane;
     int initialSize = 4;
     List<Triangle> triangles;
-    [SerializeField] GameObject meshInstance;
+    [SerializeField] Material matInstance;
     [SerializeField] Transform shapeCreationPoint;
     [SerializeField] GameObject levelCompleteUI;
+    public List<Difficulty> levelDifficulties;
     bool _isPlaying = false;
     public bool isPlaying()
     {
@@ -123,6 +124,8 @@ public class LevelBuilder : MonoBehaviour
 
     void InitBoard()
     {
+        ClearBoard();
+
         Vector3 startPoint = plane.GetChild(0).position;     // Init Board Points
         Vector3 endPoint = plane.GetChild(1).position;
 
@@ -144,23 +147,22 @@ public class LevelBuilder : MonoBehaviour
             Vector3 p1 = transform.GetChild(i).position;
             Vector3 p2 = transform.GetChild(i + 1).position;
             Vector3 p3 = (transform.GetChild(i + 1).position + transform.GetChild(i + _boardSize).position) / 2;
-            Material mat = meshInstance.GetComponent<MeshRenderer>().sharedMaterial;
-            triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 1, 2 }, mat));
+            triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 1, 2 }, matInstance));
 
             p1 = transform.GetChild(i).position;
             p2 = transform.GetChild(i + _boardSize).position;
 
-            triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 1, 0, 2 }, mat));
+            triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 1, 0, 2 }, matInstance));
 
             p1 = transform.GetChild(i + 1).position;
             p2 = transform.GetChild(i + 1 + _boardSize).position;
 
-            triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 1, 2 }, mat));
+            triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 1, 2 }, matInstance));
 
             p1 = transform.GetChild(i + _boardSize).position;
             p2 = transform.GetChild(i + _boardSize + 1).position;
 
-            triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }, mat));
+            triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }, matInstance));
 
         }
         gridVertices = new List<Vector3>();
@@ -229,9 +231,8 @@ public class LevelBuilder : MonoBehaviour
             objectMesh.vertices = vertices;
             objectMesh.RecalculateBounds();
             MeshRenderer renderer = newObject.AddComponent<MeshRenderer>();
-            renderer.material = meshInstance.GetComponent<MeshRenderer>().sharedMaterial;
-            Color color = new Color(Random.Range(0f,1f),Random.Range(0f,1f),Random.Range(0f,1f),1);
-            renderer.materials[0].color = color;
+            renderer.material = matInstance;
+            renderer.materials[0].color = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f), 1); ;
 
             newObject.AddComponent<MeshCollider>();
             newObject.layer = LayerMask.NameToLayer("Objects");
@@ -312,5 +313,30 @@ public class LevelBuilder : MonoBehaviour
         _isPlaying = false;
         yield return new WaitForSeconds(1f);
         levelCompleteUI.SetActive(true);
+    }
+
+    public void NextLevel()
+    {
+        levelCompleteUI.SetActive(false);
+        InitBoard();
+    }
+
+    void ClearBoard()
+    {
+        for(int i = 0; i < transform.childCount; i++)
+        {
+            Destroy(transform.GetChild(i).gameObject);
+        }
+        GameObject[] shapes = GameObject.FindGameObjectsWithTag("Objects");
+        for(int i = 0; i < shapes.Length; i++)
+        {
+            Destroy(shapes[i]);
+        }
+
+        if(triangles!=null)
+            triangles.Clear();
+
+        if(gridVertices!=null)
+            gridVertices.Clear();
     }
 }

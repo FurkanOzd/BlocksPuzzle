@@ -1007,7 +1007,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1248910642}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1948318402}
+        m_TargetAssemblyTypeName: LevelBuilder, Assembly-CSharp
+        m_MethodName: NextLevel
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1248910642
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1188,9 +1200,13 @@ MonoBehaviour:
   pieceCount: 5
   pointInstance: {fileID: 4794079764314868316, guid: 0d81995c8f021d14f932b17f88eeb303, type: 3}
   plane: {fileID: 720024998}
-  meshInstance: {fileID: 8346709663714118381, guid: bd74a44f7aafd864e861b7c57572ed20, type: 3}
+  matInstance: {fileID: 2100000, guid: 211869a1960ecd941b5a5b67baa62930, type: 2}
   shapeCreationPoint: {fileID: 611269375}
   levelCompleteUI: {fileID: 872858772}
+  levelDifficulties:
+  - {fileID: 11400000, guid: 7ecdb00ef26062d4e835a3544385c9d1, type: 2}
+  - {fileID: 11400000, guid: 1ffb3a9cdb3e5f44f889cfd043187127, type: 2}
+  - {fileID: 11400000, guid: 523a596cf981a124faf9c413f958528e, type: 2}
 --- !u!4 &1948318403
 Transform:
   m_ObjectHideFlags: 0
