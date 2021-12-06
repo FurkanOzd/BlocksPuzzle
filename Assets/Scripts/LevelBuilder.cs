@@ -14,16 +14,18 @@ public class LevelBuilder : MonoBehaviour
     int initialSize = 4;
     List<Triangle> triangles;
     [SerializeField] GameObject meshInstance;
-    [SerializeField] Transform shapeCreatePoint;
+    [SerializeField] Transform shapeCreationPoint;
+
+    Color[] colors = { Color.red, Color.green, Color.yellow, Color.blue, Color.cyan, Color.magenta };
+
     class Shape
     {
         public Color color;
         Mesh mainMesh;
         List<MeshFilter> triangleMeshes;
         Vector3 pos;
-        public Shape(Color color, Vector3 pos)
+        public Shape(Vector3 pos)
         {
-            this.color = color;
             this.pos = pos;
             triangleCount = 0;
             triangleMeshes = new List<MeshFilter>();
@@ -118,9 +120,6 @@ public class LevelBuilder : MonoBehaviour
 
     void InitBoard()
     {
-
-
-
         Vector3 startPoint = plane.GetChild(0).position;     // Init Board Points
         Vector3 endPoint = plane.GetChild(1).position;
 
@@ -189,7 +188,7 @@ public class LevelBuilder : MonoBehaviour
 
         for (int i = 0; i < shapes.Length; i++)
         {
-            shapes[i] = new Shape(new Color(Random.Range(0, 255), Random.Range(0, 255), Random.Range(0, 255)),triangles[randomPositions[i]].centerPoint);
+            shapes[i] = new Shape(triangles[randomPositions[i]].centerPoint);
         }
 
 
@@ -213,7 +212,7 @@ public class LevelBuilder : MonoBehaviour
         {
             GameObject newObject = new GameObject();
             newObject.name = "Shape" + $"{i}";
-            newObject.transform.position = new Vector3(0, 0,-(i+1)*.1f);
+            newObject.transform.position = shapeCreationPoint.position + Vector3.right*(endPoint - startPoint).x / shapes.Length*i+Vector3.forward*(i+1)*-.1f;
             Mesh objectMesh = shapes[i].GetMesh();
             newObject.AddComponent<MeshFilter>().mesh = objectMesh;
             Vector3[] vertices = objectMesh.vertices;
@@ -227,12 +226,12 @@ public class LevelBuilder : MonoBehaviour
             objectMesh.RecalculateBounds();
             MeshRenderer renderer = newObject.AddComponent<MeshRenderer>();
             renderer.material = meshInstance.GetComponent<MeshRenderer>().sharedMaterial;
-            renderer.materials[0].color = Random.ColorHSV();
+            Color color = new Color(Random.Range(0f,1f),Random.Range(0f,1f),Random.Range(0f,1f),1);
+            renderer.materials[0].color = color;
 
-            MeshCollider meshCl = newObject.AddComponent<MeshCollider>();
+            newObject.AddComponent<MeshCollider>();
             newObject.layer = LayerMask.NameToLayer("Objects");
-
-
+            newObject.tag = "Objects";
         }
 
         for(int i = 0; i < triangles.Count; i++)
@@ -261,7 +260,7 @@ public class LevelBuilder : MonoBehaviour
         for(int i = 0; i < meshObject.vertices.Length; i++)
         {
             float newDist = Vector3.Distance(shape.transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[i]), shape.transform.position);
-            if (newDist < dist && newDist < 1f)
+            if (newDist < dist && newDist < .25f)
             {
                 dist = newDist;
                 nearVertPos = shape.transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[i]);
@@ -273,5 +272,37 @@ public class LevelBuilder : MonoBehaviour
 
         return pos;
     }
-
+    public void CheckGrid()
+    {
+        List<Vector3> shapeVertices = new List<Vector3>();
+        GameObject[] shapePieces = GameObject.FindGameObjectsWithTag("Objects");
+        for (int i = 0; i < shapePieces.Length; i++) 
+        {
+            Mesh meshObject = shapePieces[i].transform.GetComponent<MeshFilter>().mesh;
+            for(int j = 0; j < meshObject.vertices.Length; j++)
+            {
+                Vector3 meshPos = shapePieces[i].transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[j]);
+                if (!shapeVertices.Contains(meshPos))
+                {
+                    Vector3 pos = new Vector3(meshPos.x,meshPos.y,gridVertices[0].z);
+                    shapeVertices.Add(pos);
+                }
+            }
+        }
+        Debug.Log(shapePieces.Count());
+        Debug.Log(gridVertices.Count);
+        Debug.Log(shapeVertices.Count);
+        bool complete = true;
+        for (int i = 0; i < gridVertices.Count; i++)
+        {
+            if (!shapeVertices.Contains(gridVertices[i]))
+            {
+                complete = false;
+            }
+        }
+        if (complete)
+        {
+            Debug.Log("Level Completed");
+        }
+    }
 }

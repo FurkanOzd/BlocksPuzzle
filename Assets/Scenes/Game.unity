@@ -147,7 +147,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 611269374}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.2}
+  m_LocalPosition: {x: -1.38, y: 0, z: -0.2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -662,12 +662,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e39e1917bce808f449b41afb53f3ae44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boardSize: 8
+  boardSize: 6
   pieceCount: 5
   pointInstance: {fileID: 4794079764314868316, guid: 0d81995c8f021d14f932b17f88eeb303, type: 3}
   plane: {fileID: 720024998}
   meshInstance: {fileID: 8346709663714118381, guid: bd74a44f7aafd864e861b7c57572ed20, type: 3}
-  shapeCreatePoint: {fileID: 611269375}
+  shapeCreationPoint: {fileID: 611269375}
 --- !u!4 &1948318403
 Transform:
   m_ObjectHideFlags: 0

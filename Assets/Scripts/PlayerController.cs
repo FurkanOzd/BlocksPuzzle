@@ -28,6 +28,7 @@ public class PlayerController : MonoBehaviour
         {
             selectedObject.transform.position = builder.GetSnapPoint(selectedObject);
             selectedObject = null;
+            builder.CheckGrid();
         }
     }
     void OnClick()
