@@ -7,13 +7,14 @@ public class LevelBuilder : MonoBehaviour
 {
     public int boardSize;
     int _boardSize;
-    int[,] vertices;
+    List<Vector3> gridVertices;
     public int pieceCount;
     [SerializeField] GameObject pointInstance;
     [SerializeField] Transform plane;
     int initialSize = 4;
     List<Triangle> triangles;
     [SerializeField] GameObject meshInstance;
+    [SerializeField] Transform shapeCreatePoint;
     class Shape
     {
         public Color color;
@@ -47,7 +48,6 @@ public class LevelBuilder : MonoBehaviour
             {
                 combine[i].mesh = triangleMeshes[i].mesh;
                 combine[i].transform = triangleMeshes[i].transform.localToWorldMatrix;
-
             }
             mainMesh.CombineMeshes(combine);
 
@@ -79,6 +79,7 @@ public class LevelBuilder : MonoBehaviour
             mesh.vertices = vertices;
             mesh.triangles = indexes;
             triangleObject = new GameObject();
+            triangleObject.transform.position = Vector3.zero;
             filter = triangleObject.AddComponent<MeshFilter>();
             MeshRenderer renderer = triangleObject.AddComponent<MeshRenderer>();
             renderer.material = mat;
@@ -98,6 +99,10 @@ public class LevelBuilder : MonoBehaviour
         {
             return triangleObject.GetComponent<MeshFilter>();
         }
+        public GameObject GetObject()
+        {
+            return triangleObject;
+        }
     }
 
     private void Awake()
@@ -113,14 +118,8 @@ public class LevelBuilder : MonoBehaviour
 
     void InitBoard()
     {
-        vertices = new int[_boardSize, _boardSize];
-        for (int i = 0; i < _boardSize; i++)
-        {
-            for (int j = 0; j < _boardSize; j++)
-            {
-                vertices[i, j] = 0;
-            }
-        }
+
+
 
         Vector3 startPoint = plane.GetChild(0).position;     // Init Board Points
         Vector3 endPoint = plane.GetChild(1).position;
@@ -162,23 +161,35 @@ public class LevelBuilder : MonoBehaviour
             triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }, mat));
 
         }
+        gridVertices = new List<Vector3>();
+        for (int i = 0; i < triangles.Count; i++)
+        {
+            List<Vector3> temp = triangles[i].GetVertices().ToList();
+            for(int j = 0; j < temp.Count; j++)
+            {
+                if (!gridVertices.Contains(temp[j]))
+                {
+                    gridVertices.Add(temp[j]);
+                }
+            }
+        }
 
         Shape[] shapes = new Shape[pieceCount];
         int[] randomPositions = new int[pieceCount];
 
-        for (int i = 0; i < randomPositions.Length; i++)
+        for (int i = 0; i < randomPositions.Length; i++) //Get Random CenterPoint From Vertices For Shapes
         {
-            int randNum = Random.Range(0, transform.childCount);
+            int randNum = Random.Range(0, triangles.Count);
             while (randomPositions.Contains(randNum))
             {
-                randNum = Random.Range(0, transform.childCount);
+                randNum = Random.Range(0, triangles.Count);
             }
             randomPositions[i] = randNum;
         }
 
         for (int i = 0; i < shapes.Length; i++)
         {
-            shapes[i] = new Shape(new Color(Random.Range(0, 255), Random.Range(0, 255), Random.Range(0, 255)), transform.GetChild(randomPositions[i]).position);
+            shapes[i] = new Shape(new Color(Random.Range(0, 255), Random.Range(0, 255), Random.Range(0, 255)),triangles[randomPositions[i]].centerPoint);
         }
 
 
@@ -198,13 +209,69 @@ public class LevelBuilder : MonoBehaviour
                 selectedShape.AddTriangleToShape(triangles[i].GetMeshFilter());
         }
 
-        for (int i = 0; i < shapes.Length; i++)
+        for (int i = 0; i < shapes.Length; i++)  //Create Shape Objects
         {
-            GameObject newObject = Instantiate(meshInstance, new Vector3(0, 0,-.1f), Quaternion.identity);
-            newObject.GetComponent<MeshFilter>().mesh = shapes[i].GetMesh();
-            newObject.GetComponent<MeshRenderer>().materials[0].color = Random.ColorHSV();
+            GameObject newObject = new GameObject();
+            newObject.name = "Shape" + $"{i}";
+            newObject.transform.position = new Vector3(0, 0,-(i+1)*.1f);
+            Mesh objectMesh = shapes[i].GetMesh();
+            newObject.AddComponent<MeshFilter>().mesh = objectMesh;
+            Vector3[] vertices = objectMesh.vertices;
+            Vector3 offset = objectMesh.bounds.center;
+
+            for (int j = 0; j < vertices.Length; j++)
+            {
+                vertices[j] -= offset;
+            }
+            objectMesh.vertices = vertices;
+            objectMesh.RecalculateBounds();
+            MeshRenderer renderer = newObject.AddComponent<MeshRenderer>();
+            renderer.material = meshInstance.GetComponent<MeshRenderer>().sharedMaterial;
+            renderer.materials[0].color = Random.ColorHSV();
+
+            MeshCollider meshCl = newObject.AddComponent<MeshCollider>();
+            newObject.layer = LayerMask.NameToLayer("Objects");
+
+
         }
 
+        for(int i = 0; i < triangles.Count; i++)
+        {
+            Destroy(triangles[i].GetObject());
+        }
+    }
+
+    public Vector3 GetSnapPoint(GameObject shape)
+    {
+        Vector3 pos = shape.transform.position;
+        float dist = Mathf.Infinity;
+
+        for(int i = 0; i < gridVertices.Count; i++)
+        {
+            float newDist = Vector3.Distance(gridVertices[i],shape.transform.position);
+            if (newDist < dist && newDist<1f)
+            {
+                dist = newDist;
+                pos = gridVertices[i];
+            }
+        }
+        Mesh meshObject = shape.transform.GetComponent<MeshFilter>().mesh;
+        dist = Mathf.Infinity;
+        Vector3 nearVertPos=Vector3.zero;
+        for(int i = 0; i < meshObject.vertices.Length; i++)
+        {
+            float newDist = Vector3.Distance(shape.transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[i]), shape.transform.position);
+            if (newDist < dist && newDist < 1f)
+            {
+                dist = newDist;
+                nearVertPos = shape.transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[i]);
+            }
+        }
+
+        pos = pos + (shape.transform.position - nearVertPos);
+        pos.z = -.5f;
+
+        return pos;
     }
 
 }
