@@ -15,9 +15,12 @@ public class LevelBuilder : MonoBehaviour
     List<Triangle> triangles;
     [SerializeField] GameObject meshInstance;
     [SerializeField] Transform shapeCreationPoint;
-
-    Color[] colors = { Color.red, Color.green, Color.yellow, Color.blue, Color.cyan, Color.magenta };
-
+    [SerializeField] GameObject levelCompleteUI;
+    bool _isPlaying = false;
+    public bool isPlaying()
+    {
+        return _isPlaying;
+    }
     class Shape
     {
         public Color color;
@@ -222,6 +225,7 @@ public class LevelBuilder : MonoBehaviour
             {
                 vertices[j] -= offset;
             }
+
             objectMesh.vertices = vertices;
             objectMesh.RecalculateBounds();
             MeshRenderer renderer = newObject.AddComponent<MeshRenderer>();
@@ -238,6 +242,7 @@ public class LevelBuilder : MonoBehaviour
         {
             Destroy(triangles[i].GetObject());
         }
+        _isPlaying = true;
     }
 
     public Vector3 GetSnapPoint(GameObject shape)
@@ -267,7 +272,7 @@ public class LevelBuilder : MonoBehaviour
             }
         }
 
-        pos = pos + (shape.transform.position - nearVertPos);
+        pos += (shape.transform.position - nearVertPos);
         pos.z = -.5f;
 
         return pos;
@@ -289,9 +294,6 @@ public class LevelBuilder : MonoBehaviour
                 }
             }
         }
-        Debug.Log(shapePieces.Count());
-        Debug.Log(gridVertices.Count);
-        Debug.Log(shapeVertices.Count);
         bool complete = true;
         for (int i = 0; i < gridVertices.Count; i++)
         {
@@ -302,7 +304,13 @@ public class LevelBuilder : MonoBehaviour
         }
         if (complete)
         {
-            Debug.Log("Level Completed");
+            StartCoroutine(LevelComplete());
         }
+    }
+    IEnumerator LevelComplete()
+    {
+        _isPlaying = false;
+        yield return new WaitForSeconds(1f);
+        levelCompleteUI.SetActive(true);
     }
 }

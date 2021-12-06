@@ -15,20 +15,23 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetMouseButton(0) && selectedObject != null)
+        if (builder.isPlaying())
         {
-            DragObject();
-        }
+            if (Input.GetMouseButton(0) && selectedObject != null)
+            {
+                DragObject();
+            }
 
-        if (Input.GetMouseButtonDown(0) && selectedObject==null)
-        {
-            OnClick();
-        }
-        if (Input.GetMouseButtonUp(0) && selectedObject!=null)
-        {
-            selectedObject.transform.position = builder.GetSnapPoint(selectedObject);
-            selectedObject = null;
-            builder.CheckGrid();
+            if (Input.GetMouseButtonDown(0) && selectedObject == null)
+            {
+                OnClick();
+            }
+            if (Input.GetMouseButtonUp(0) && selectedObject != null)
+            {
+                selectedObject.transform.position = builder.GetSnapPoint(selectedObject);
+                selectedObject = null;
+                builder.CheckGrid();
+            }
         }
     }
     void OnClick()
