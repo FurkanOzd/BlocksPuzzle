@@ -5,13 +5,12 @@ using System.Linq;
 
 public class LevelBuilder : MonoBehaviour
 {
-    public int boardSize;
+    int boardSize;
     int _boardSize;
     List<Vector3> gridVertices;
-    public int pieceCount;
+    int pieceCount;
     [SerializeField] GameObject pointInstance;
     [SerializeField] Transform plane;
-    int initialSize = 4;
     List<Triangle> triangles;
     [SerializeField] Material matInstance;
     [SerializeField] Transform shapeCreationPoint;
@@ -111,12 +110,6 @@ public class LevelBuilder : MonoBehaviour
         }
     }
 
-    private void Awake()
-    {
-        _boardSize = boardSize + 1;
-    }
-
-
     void Start()
     {
         InitBoard();
@@ -125,6 +118,14 @@ public class LevelBuilder : MonoBehaviour
     void InitBoard()
     {
         ClearBoard();
+        boardSize = 0;
+        Difficulty levelDiff = levelDifficulties[Random.Range(0, levelDifficulties.Count)];
+        boardSize = Random.Range(levelDiff.minBoardSize,levelDiff.maxBoardSize+1);
+        pieceCount = Random.Range(levelDiff.minPieceCount,levelDiff.maxPieceCount+1);
+
+        
+        _boardSize = boardSize + 1;
+
 
         Vector3 startPoint = plane.GetChild(0).position;     // Init Board Points
         Vector3 endPoint = plane.GetChild(1).position;
@@ -138,6 +139,8 @@ public class LevelBuilder : MonoBehaviour
         }
 
         triangles = new List<Triangle>();
+        Debug.Log(transform.childCount);
+        Debug.Log(_boardSize);
         for (int i = 0; i < transform.childCount - _boardSize; i++)  //Create Triangles Based On Grid
         {
             if (i % _boardSize == _boardSize - 1)
@@ -254,7 +257,7 @@ public class LevelBuilder : MonoBehaviour
         for(int i = 0; i < gridVertices.Count; i++)
         {
             float newDist = Vector3.Distance(gridVertices[i],shape.transform.position);
-            if (newDist < dist && newDist<1f)
+            if (newDist < dist)
             {
                 dist = newDist;
                 pos = gridVertices[i];
@@ -275,8 +278,10 @@ public class LevelBuilder : MonoBehaviour
 
         pos += (shape.transform.position - nearVertPos);
         pos.z = -.5f;
-
-        return pos;
+        if (Vector3.Distance(pos, shape.transform.position) < 1f)
+            return pos;
+        else
+            return shape.transform.position;
     }
     public void CheckGrid()
     {
@@ -290,15 +295,16 @@ public class LevelBuilder : MonoBehaviour
                 Vector3 meshPos = shapePieces[i].transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[j]);
                 if (!shapeVertices.Contains(meshPos))
                 {
-                    Vector3 pos = new Vector3(meshPos.x,meshPos.y,gridVertices[0].z);
-                    shapeVertices.Add(pos);
+                    shapeVertices.Add(meshPos);
                 }
             }
         }
+        Debug.Log(shapeVertices.Count);
+        Debug.Log(gridVertices.Count);
         bool complete = true;
-        for (int i = 0; i < gridVertices.Count; i++)
+        for (int i = 0; i < shapeVertices.Count; i++)
         {
-            if (!shapeVertices.Contains(gridVertices[i]))
+            if (!shapeVertices.Contains(new Vector3(gridVertices[i].x,gridVertices[i].y,-.5f)))
             {
                 complete = false;
             }
@@ -323,14 +329,14 @@ public class LevelBuilder : MonoBehaviour
 
     void ClearBoard()
     {
-        for(int i = 0; i < transform.childCount; i++)
+        for (int i = transform.childCount - 1; i >= 0; i--)
         {
-            Destroy(transform.GetChild(i).gameObject);
+            DestroyImmediate(transform.GetChild(i).gameObject);
         }
         GameObject[] shapes = GameObject.FindGameObjectsWithTag("Objects");
         for(int i = 0; i < shapes.Length; i++)
         {
-            Destroy(shapes[i]);
+            DestroyImmediate(shapes[i]);
         }
 
         if(triangles!=null)

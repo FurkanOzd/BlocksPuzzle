@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxBoardSize: 5
   minBoardSize: 4
-  maxPieceCount: 12
+  maxPieceCount: 9
   minPieceCount: 7
