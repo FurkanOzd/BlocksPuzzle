@@ -15,6 +15,9 @@ public class LevelBuilder : MonoBehaviour
     [SerializeField] Material matInstance;
     [SerializeField] Transform shapeCreationPoint;
     [SerializeField] GameObject levelCompleteUI;
+    GameObject[] shapePieces;
+    List<Vector3> centerPoints;
+
     public List<Difficulty> levelDifficulties;
     bool _isPlaying = false;
     public bool isPlaying()
@@ -120,10 +123,10 @@ public class LevelBuilder : MonoBehaviour
         ClearBoard();
         boardSize = 0;
         Difficulty levelDiff = levelDifficulties[Random.Range(0, levelDifficulties.Count)];
-        boardSize = Random.Range(levelDiff.minBoardSize,levelDiff.maxBoardSize+1);
-        pieceCount = Random.Range(levelDiff.minPieceCount,levelDiff.maxPieceCount+1);
+        boardSize = Random.Range(levelDiff.minBoardSize, levelDiff.maxBoardSize + 1);
+        pieceCount = Random.Range(levelDiff.minPieceCount, levelDiff.maxPieceCount + 1);
 
-        
+
         _boardSize = boardSize + 1;
 
 
@@ -134,13 +137,11 @@ public class LevelBuilder : MonoBehaviour
         {
             for (int j = 0; j < _boardSize; j++)
             {
-                Instantiate(pointInstance, startPoint + transform.right *((endPoint-startPoint).x/(_boardSize-1)) * j + transform.up * ((endPoint - startPoint).y / (_boardSize-1)) * i, Quaternion.identity, transform);
+                Instantiate(pointInstance, startPoint + transform.right * ((endPoint - startPoint).x / (_boardSize - 1)) * j + transform.up * ((endPoint - startPoint).y / (_boardSize - 1)) * i, Quaternion.identity, transform);
             }
         }
 
         triangles = new List<Triangle>();
-        Debug.Log(transform.childCount);
-        Debug.Log(_boardSize);
         for (int i = 0; i < transform.childCount - _boardSize; i++)  //Create Triangles Based On Grid
         {
             if (i % _boardSize == _boardSize - 1)
@@ -172,12 +173,9 @@ public class LevelBuilder : MonoBehaviour
         for (int i = 0; i < triangles.Count; i++)
         {
             List<Vector3> temp = triangles[i].GetVertices().ToList();
-            for(int j = 0; j < temp.Count; j++)
+            for (int j = 0; j < temp.Count; j++)
             {
-                if (!gridVertices.Contains(temp[j]))
-                {
-                    gridVertices.Add(temp[j]);
-                }
+                gridVertices.Add(temp[j]);
             }
         }
 
@@ -220,7 +218,7 @@ public class LevelBuilder : MonoBehaviour
         {
             GameObject newObject = new GameObject();
             newObject.name = "Shape" + $"{i}";
-            newObject.transform.position = shapeCreationPoint.position + Vector3.right*(endPoint - startPoint).x / shapes.Length*i+Vector3.forward*(i+1)*-.1f;
+            newObject.transform.position = shapeCreationPoint.position + Vector3.right * (endPoint - startPoint).x / shapes.Length * i + Vector3.forward * (i + 1) * -.1f;
             Mesh objectMesh = shapes[i].GetMesh();
             newObject.AddComponent<MeshFilter>().mesh = objectMesh;
             Vector3[] vertices = objectMesh.vertices;
@@ -241,11 +239,13 @@ public class LevelBuilder : MonoBehaviour
             newObject.layer = LayerMask.NameToLayer("Objects");
             newObject.tag = "Objects";
         }
-
-        for(int i = 0; i < triangles.Count; i++)
+        centerPoints = new List<Vector3>();
+        for (int i = 0; i < triangles.Count; i++)
         {
             Destroy(triangles[i].GetObject());
+            centerPoints.Add(triangles[i].centerPoint);
         }
+        shapePieces = GameObject.FindGameObjectsWithTag("Objects");
         _isPlaying = true;
     }
 
@@ -254,9 +254,9 @@ public class LevelBuilder : MonoBehaviour
         Vector3 pos = shape.transform.position;
         float dist = Mathf.Infinity;
 
-        for(int i = 0; i < gridVertices.Count; i++)
+        for (int i = 0; i < gridVertices.Count; i++)
         {
-            float newDist = Vector3.Distance(gridVertices[i],shape.transform.position);
+            float newDist = Vector3.Distance(gridVertices[i], new Vector3(shape.transform.position.x, shape.transform.position.y, gridVertices[0].z));
             if (newDist < dist)
             {
                 dist = newDist;
@@ -265,11 +265,11 @@ public class LevelBuilder : MonoBehaviour
         }
         Mesh meshObject = shape.transform.GetComponent<MeshFilter>().mesh;
         dist = Mathf.Infinity;
-        Vector3 nearVertPos=Vector3.zero;
-        for(int i = 0; i < meshObject.vertices.Length; i++)
+        Vector3 nearVertPos = Vector3.zero;
+        for (int i = 0; i < meshObject.vertices.Length; i++)
         {
             float newDist = Vector3.Distance(shape.transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[i]), shape.transform.position);
-            if (newDist < dist && newDist < .25f)
+            if (newDist < dist)
             {
                 dist = newDist;
                 nearVertPos = shape.transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[i]);
@@ -278,38 +278,47 @@ public class LevelBuilder : MonoBehaviour
 
         pos += (shape.transform.position - nearVertPos);
         pos.z = -.5f;
-        if (Vector3.Distance(pos, shape.transform.position) < 1f)
+        if (Vector3.Distance(pos, new Vector3(shape.transform.position.x, shape.transform.position.y, -.5f)) < 2f)
             return pos;
         else
             return shape.transform.position;
     }
     public void CheckGrid()
     {
-        List<Vector3> shapeVertices = new List<Vector3>();
-        GameObject[] shapePieces = GameObject.FindGameObjectsWithTag("Objects");
-        for (int i = 0; i < shapePieces.Length; i++) 
+        List<Vector3> shapeTriangleCenters = new List<Vector3>();
+        for (int i = 0; i < shapePieces.Length; i++)
         {
             Mesh meshObject = shapePieces[i].transform.GetComponent<MeshFilter>().mesh;
-            for(int j = 0; j < meshObject.vertices.Length; j++)
+            for (int j = 0; j < meshObject.triangles.Length; j+=3)
             {
-                Vector3 meshPos = shapePieces[i].transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[j]);
-                if (!shapeVertices.Contains(meshPos))
+                //Vector3 meshPos = shapePieces[i].transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[j]);
+                //shapeVertices.Add(meshPos);
+                Vector3 p1 = shapePieces[i].transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[meshObject.triangles[j]]);
+                Vector3 p2 = shapePieces[i].transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[meshObject.triangles[j+1]]);
+                Vector3 p3 = shapePieces[i].transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[meshObject.triangles[j+2]]);
+
+                Vector3 centerPoint = (p1 + p2 + p3) / 3;
+                shapeTriangleCenters.Add(centerPoint);
+            }
+        }
+        Debug.Log(shapeTriangleCenters.Count + "->shapeVertices");
+        Debug.Log(centerPoints.Count + "->centerPoints");
+
+        int exist = 0;
+       for(int i = 0; i < shapeTriangleCenters.Count; i++)
+       {
+            for(int j = 0; j < centerPoints.Count; j++)
+            {
+                if(Vector3.Distance(new Vector3(shapeTriangleCenters[i].x, shapeTriangleCenters[i].y, centerPoints[j].z),centerPoints[j]) < .001f)
                 {
-                    shapeVertices.Add(meshPos);
+                    exist++;
+                    break;
                 }
             }
-        }
-        Debug.Log(shapeVertices.Count);
-        Debug.Log(gridVertices.Count);
-        bool complete = true;
-        for (int i = 0; i < shapeVertices.Count; i++)
-        {
-            if (!shapeVertices.Contains(new Vector3(gridVertices[i].x,gridVertices[i].y,-.5f)))
-            {
-                complete = false;
-            }
-        }
-        if (complete)
+       }
+        Debug.Log(exist);
+
+        if (exist==centerPoints.Count)
         {
             StartCoroutine(LevelComplete());
         }
@@ -334,15 +343,19 @@ public class LevelBuilder : MonoBehaviour
             DestroyImmediate(transform.GetChild(i).gameObject);
         }
         GameObject[] shapes = GameObject.FindGameObjectsWithTag("Objects");
-        for(int i = 0; i < shapes.Length; i++)
+
+        for (int i = shapes.Length - 1; i >= 0; i--)
         {
             DestroyImmediate(shapes[i]);
+            shapes = GameObject.FindGameObjectsWithTag("Objects");
         }
 
-        if(triangles!=null)
+
+
+        if (triangles != null)
             triangles.Clear();
 
-        if(gridVertices!=null)
+        if (gridVertices != null)
             gridVertices.Clear();
     }
 }
