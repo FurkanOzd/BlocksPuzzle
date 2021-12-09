@@ -182,7 +182,7 @@ public class LevelBuilder : MonoBehaviour
         Shape[] shapes = new Shape[pieceCount];
         int[] randomPositions = new int[pieceCount];
 
-        for (int i = 0; i < randomPositions.Length; i++) //Get Random CenterPoint From Vertices For Shapes
+        for (int i = 0; i < randomPositions.Length; i++)    //Get Random CenterPoint From Vertices For Shapes
         {
             int randNum = Random.Range(0, triangles.Count);
             while (randomPositions.Contains(randNum))
@@ -278,7 +278,7 @@ public class LevelBuilder : MonoBehaviour
 
         pos += (shape.transform.position - nearVertPos);
         pos.z = -.5f;
-        if (Vector3.Distance(pos, new Vector3(shape.transform.position.x, shape.transform.position.y, -.5f)) < 2f)
+        if (Vector3.Distance(pos, new Vector3(shape.transform.position.x, shape.transform.position.y, -.5f)) < .5f)
             return pos;
         else
             return shape.transform.position;
@@ -305,8 +305,8 @@ public class LevelBuilder : MonoBehaviour
         Debug.Log(centerPoints.Count + "->centerPoints");
 
         int exist = 0;
-       for(int i = 0; i < shapeTriangleCenters.Count; i++)
-       {
+        for(int i = 0; i < shapeTriangleCenters.Count; i++)
+        {
             for(int j = 0; j < centerPoints.Count; j++)
             {
                 if(Vector3.Distance(new Vector3(shapeTriangleCenters[i].x, shapeTriangleCenters[i].y, centerPoints[j].z),centerPoints[j]) < .001f)
@@ -315,7 +315,8 @@ public class LevelBuilder : MonoBehaviour
                     break;
                 }
             }
-       }
+        }
+       
         Debug.Log(exist);
 
         if (exist==centerPoints.Count)
@@ -349,8 +350,6 @@ public class LevelBuilder : MonoBehaviour
             DestroyImmediate(shapes[i]);
             shapes = GameObject.FindGameObjectsWithTag("Objects");
         }
-
-
 
         if (triangles != null)
             triangles.Clear();
