@@ -321,31 +321,19 @@ public class LevelBuilder : MonoBehaviour
     }
     public void CheckGrid()
     {
-        List<Vector3> shapeVertices = new List<Vector3>();
-
-        Mesh mainMesh = new Mesh();
-        CombineInstance[] combine = new CombineInstance[shapePieces.Length];
-
-        for (int i = 0; i < combine.Count(); i++)
-        {
-            combine[i].mesh = shapePieces[i].GetComponent<MeshFilter>().mesh;
-            combine[i].transform = shapePieces[i].transform.localToWorldMatrix;
-        }
-        GameObject newGameObject = new GameObject("Check");
-        newGameObject.SetActive(false);
-        MeshFilter filter = newGameObject.AddComponent<MeshFilter>();
-        filter.mesh.CombineMeshes(combine);
-        newGameObject.transform.position = new Vector3(0, 0, 0);
         List<Vector3> mainShapeCenters = new List<Vector3>();
 
-        filter.mesh.RecalculateBounds();
-        for(int i = 0; i < filter.mesh.triangles.Count(); i+=3)
+        for (int j = 0; j < shapePieces.Length; j++)
         {
-            Vector3 p1 = newGameObject.transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i]]);
-            Vector3 p2 = newGameObject.transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i + 1]]);
-            Vector3 p3 = newGameObject.transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i + 2]]);
+            MeshFilter filter = shapePieces[j].GetComponent<MeshFilter>();
+            for (int i = 0; i < filter.mesh.triangles.Count(); i += 3)
+            {
+                Vector3 p1 = shapePieces[j].transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i]]);
+                Vector3 p2 = shapePieces[j].transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i + 1]]);
+                Vector3 p3 = shapePieces[j].transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i + 2]]);
 
-            mainShapeCenters.Add((p1+p2+p3)/3);
+                mainShapeCenters.Add((p1 + p2 + p3) / 3);
+            }
         }
         int exist = 0;
         List<Vector3> matchedVertices = new List<Vector3>();
