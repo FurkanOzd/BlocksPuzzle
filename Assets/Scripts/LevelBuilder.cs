@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using System.IO;
 
 public class LevelBuilder : MonoBehaviour
 {
@@ -23,6 +24,12 @@ public class LevelBuilder : MonoBehaviour
     public bool isPlaying()
     {
         return _isPlaying;
+    }
+    class GameData
+    {
+        public int boardSize;
+        public string difficulty;
+        public int pieceCount;
     }
     class Shape
     {
@@ -290,6 +297,14 @@ public class LevelBuilder : MonoBehaviour
             centerPoints.Add(triangles[i].centerPoint);
         }
         shapePieces = GameObject.FindGameObjectsWithTag("Objects");
+        GameData data = new GameData();
+        data.boardSize = boardSize;
+        data.pieceCount = shapePieces.Length;
+        data.difficulty = levelDiff.name;
+        string json = JsonUtility.ToJson(data);
+        Debug.Log(json);
+
+        File.WriteAllText(Application.dataPath+"//levelOutput.json",json);
         _isPlaying = true;
     }
 
