@@ -17,7 +17,7 @@ public class LevelBuilder : MonoBehaviour
     [SerializeField] GameObject levelCompleteUI;
     GameObject[] shapePieces;
     List<Vector3> centerPoints;
-
+    Mesh main;
     public List<Difficulty> levelDifficulties;
     bool _isPlaying = false;
     public bool isPlaying()
@@ -167,8 +167,8 @@ public class LevelBuilder : MonoBehaviour
             p2 = transform.GetChild(i + _boardSize + 1).position;
 
             triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }, matInstance));
-
         }
+
         gridVertices = new List<Vector3>();
         for (int i = 0; i < triangles.Count; i++)
         {
@@ -236,9 +236,53 @@ public class LevelBuilder : MonoBehaviour
             renderer.materials[0].color = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f), 1); ;
 
             newObject.AddComponent<MeshCollider>();
+
             newObject.layer = LayerMask.NameToLayer("Objects");
             newObject.tag = "Objects";
+
+            Vector3 xPos= newObject.transform.localToWorldMatrix.MultiplyPoint3x4(vertices[0]);
+            Vector3 xNeg= newObject.transform.localToWorldMatrix.MultiplyPoint3x4(vertices[0]);
+            Vector3 yPos= newObject.transform.localToWorldMatrix.MultiplyPoint3x4(vertices[0]);
+            Vector3 yNeg= newObject.transform.localToWorldMatrix.MultiplyPoint3x4(vertices[0]);
+            for (int j = 1; j < vertices.Length; j++)
+            {
+                Vector3 vertex = newObject.transform.localToWorldMatrix.MultiplyPoint3x4(vertices[j]);
+                if (yNeg.y < vertex.y)
+                {
+                    yNeg = vertex;
+                }
+                if (xNeg.x < vertex.x)
+                {
+                    xNeg = vertex;
+                }
+                if (yPos.y > vertex.y)
+                {
+                    yPos = vertex;
+                }
+                if (xPos.x > vertex.x)
+                {
+                    xPos = vertex;
+                }
+            }
+            GameObject snapPoint = new GameObject();
+            snapPoint.transform.position = xPos;
+            snapPoint.transform.parent = newObject.transform;
+
+            snapPoint = new GameObject();
+            snapPoint.transform.position = yPos;
+            snapPoint.transform.parent = newObject.transform;
+
+            snapPoint = new GameObject();
+            snapPoint.transform.position = xNeg;
+            snapPoint.transform.parent = newObject.transform;
+
+            snapPoint = new GameObject();
+            snapPoint.transform.position = yNeg;
+            snapPoint.transform.parent = newObject.transform;
+
         }
+
+
         centerPoints = new List<Vector3>();
         for (int i = 0; i < triangles.Count; i++)
         {
@@ -251,75 +295,73 @@ public class LevelBuilder : MonoBehaviour
 
     public Vector3 GetSnapPoint(GameObject shape)
     {
-        Vector3 pos = shape.transform.position;
         float dist = Mathf.Infinity;
-
-        for (int i = 0; i < gridVertices.Count; i++)
+        Vector3 distance = Vector3.zero;
+        for(int i = 0; i < shape.transform.childCount; i++)
         {
-            float newDist = Vector3.Distance(gridVertices[i], new Vector3(shape.transform.position.x, shape.transform.position.y, gridVertices[0].z));
-            if (newDist < dist)
+            for(int j = 0; j < gridVertices.Count; j++)
             {
-                dist = newDist;
-                pos = gridVertices[i];
+                Transform child = shape.transform.GetChild(i);
+                Vector3 shapeChildPos = new Vector3(child.position.x,child.position.y,gridVertices[0].z);
+                if (Vector3.Distance(shapeChildPos, gridVertices[j]) < dist)
+                {
+                    dist = Vector3.Distance(shapeChildPos,gridVertices[j]);
+                    distance = gridVertices[j] - shapeChildPos;
+                }
             }
         }
-        Mesh meshObject = shape.transform.GetComponent<MeshFilter>().mesh;
-        dist = Mathf.Infinity;
-        Vector3 nearVertPos = Vector3.zero;
-        for (int i = 0; i < meshObject.vertices.Length; i++)
+        if (distance.magnitude < .5f)
         {
-            float newDist = Vector3.Distance(shape.transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[i]), shape.transform.position);
-            if (newDist < dist)
-            {
-                dist = newDist;
-                nearVertPos = shape.transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[i]);
-            }
-        }
-
-        pos += (shape.transform.position - nearVertPos);
-        pos.z = -.5f;
-        if (Vector3.Distance(pos, new Vector3(shape.transform.position.x, shape.transform.position.y, -.5f)) < .5f)
+            Vector3 pos = shape.transform.position + distance;
+            pos.z = -.5f;
             return pos;
+        }
         else
             return shape.transform.position;
     }
     public void CheckGrid()
     {
-        List<Vector3> shapeTriangleCenters = new List<Vector3>();
-        for (int i = 0; i < shapePieces.Length; i++)
+        List<Vector3> shapeVertices = new List<Vector3>();
+
+        Mesh mainMesh = new Mesh();
+        CombineInstance[] combine = new CombineInstance[shapePieces.Length];
+
+        for (int i = 0; i < combine.Count(); i++)
         {
-            Mesh meshObject = shapePieces[i].transform.GetComponent<MeshFilter>().mesh;
-            for (int j = 0; j < meshObject.triangles.Length; j+=3)
-            {
-                //Vector3 meshPos = shapePieces[i].transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[j]);
-                //shapeVertices.Add(meshPos);
-                Vector3 p1 = shapePieces[i].transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[meshObject.triangles[j]]);
-                Vector3 p2 = shapePieces[i].transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[meshObject.triangles[j+1]]);
-                Vector3 p3 = shapePieces[i].transform.localToWorldMatrix.MultiplyPoint3x4(meshObject.vertices[meshObject.triangles[j+2]]);
-
-                Vector3 centerPoint = (p1 + p2 + p3) / 3;
-                shapeTriangleCenters.Add(centerPoint);
-            }
+            combine[i].mesh = shapePieces[i].GetComponent<MeshFilter>().mesh;
+            combine[i].transform = shapePieces[i].transform.localToWorldMatrix;
         }
-        Debug.Log(shapeTriangleCenters.Count + "->shapeVertices");
-        Debug.Log(centerPoints.Count + "->centerPoints");
+        GameObject newGameObject = new GameObject("Check");
+        newGameObject.SetActive(false);
+        MeshFilter filter = newGameObject.AddComponent<MeshFilter>();
+        filter.mesh.CombineMeshes(combine);
+        newGameObject.transform.position = new Vector3(0, 0, 0);
+        List<Vector3> mainShapeCenters = new List<Vector3>();
 
+        filter.mesh.RecalculateBounds();
+        for(int i = 0; i < filter.mesh.triangles.Count(); i+=3)
+        {
+            Vector3 p1 = newGameObject.transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i]]);
+            Vector3 p2 = newGameObject.transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i + 1]]);
+            Vector3 p3 = newGameObject.transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i + 2]]);
+
+            mainShapeCenters.Add((p1+p2+p3)/3);
+        }
         int exist = 0;
-        for(int i = 0; i < shapeTriangleCenters.Count; i++)
+        List<Vector3> matchedVertices = new List<Vector3>();
+        for(int i = 0; i < mainShapeCenters.Count; i++)
         {
             for(int j = 0; j < centerPoints.Count; j++)
             {
-                if(Vector3.Distance(new Vector3(shapeTriangleCenters[i].x, shapeTriangleCenters[i].y, centerPoints[j].z),centerPoints[j]) < .001f)
+                if ((new Vector3(mainShapeCenters[i].x,mainShapeCenters[i].y,centerPoints[j].z) == centerPoints[j]) && !matchedVertices.Contains(centerPoints[j]))
                 {
                     exist++;
+                    matchedVertices.Add(centerPoints[j]);
                     break;
                 }
             }
         }
-       
-        Debug.Log(exist);
-
-        if (exist==centerPoints.Count)
+        if (exist == centerPoints.Count)
         {
             StartCoroutine(LevelComplete());
         }
