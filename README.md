@@ -8,7 +8,7 @@
 - Create grid (boardSize x boardSize)
 - Create 4 triangles from every square
 - Create points from triangles corners
-- Pick randomPoints from grid, equals to pieceCount
-- Create shapes equals to pieceCount
+- Create shapes equal to pieceCount
+- Pick random points from grid, and set these points to shape centers.
 - Select nearest triangles to points, and add to shapes
-- Combine triangles meshes into one mesh and set to shape
+- Combine shape triangles meshes into one mesh and set to shape
