@@ -2,9 +2,10 @@ using UnityEngine;
 
 public class GridCell : MonoBehaviour
 {
-    private void OnDrawGizmos()
+    public bool IsEmpty { get; private set; } = true;
+
+    public void Toggle(bool toggle)
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawRay(transform.position,-Vector3.forward);
+        IsEmpty = toggle;
     }
 }

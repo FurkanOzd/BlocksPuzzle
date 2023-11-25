@@ -120,44 +120,6 @@ public class LevelBuilder : MonoBehaviour
         _isPlaying = true;
     }
     
-    /*public void CheckGrid()
-    {
-        List<Vector3> mainShapeCenters = new List<Vector3>();
-
-        for (int j = 0; j < _shapePieces.Length; j++)
-        {
-            MeshFilter filter = _shapePieces[j].GetComponent<MeshFilter>();
-            for (int i = 0; i < filter.mesh.triangles.Count(); i += 3)
-            {
-                Vector3 p1 = _shapePieces[j].transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i]]);
-                Vector3 p2 = _shapePieces[j].transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i + 1]]);
-                Vector3 p3 = _shapePieces[j].transform.localToWorldMatrix.MultiplyPoint3x4(filter.mesh.vertices[filter.mesh.triangles[i + 2]]);
-
-                mainShapeCenters.Add((p1 + p2 + p3) / 3);
-            }
-        }
-
-        int exist = 0;
-
-        List<Vector3> matchedVertices = new List<Vector3>();
-        for(int i = 0; i < mainShapeCenters.Count; i++)
-        {
-            for(int j = 0; j < centerPoints.Count; j++)
-            {
-                if ((new Vector3(mainShapeCenters[i].x,mainShapeCenters[i].y,centerPoints[j].z) == centerPoints[j]) && !matchedVertices.Contains(centerPoints[j]))
-                {
-                    exist++;
-                    matchedVertices.Add(centerPoints[j]);
-                    break;
-                }
-            }
-        }
-        if (exist == centerPoints.Count)
-        {
-            StartCoroutine(LevelComplete());
-        }
-    }*/
-    
     IEnumerator LevelComplete()
     {
         _isPlaying = false;

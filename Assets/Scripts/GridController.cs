@@ -48,6 +48,8 @@ public class GridController : IDisposable
                 _gridCells[i,j] = Object.Instantiate(_gridCellInstance,
                     _gridTopLeft + Vector3.right * (pointDifference.x / (boardSize - 1)) * j +
                     Vector3.up * (pointDifference.y / (boardSize - 1)) * i, Quaternion.identity, _cellParent);
+
+                _gridCells[i, j].gameObject.name = $"Grid[{i},{j}]";
             }
         }
         
@@ -106,6 +108,8 @@ public class GridController : IDisposable
         Vector3 newPos = shape.transform.position + offset;
         newPos.z = -1f;
         shape.transform.position = newPos;
+        
+        shape.CheckForGridFill();
 
         return true;
     }
@@ -116,13 +120,13 @@ public class GridController : IDisposable
         {
             for (int j = 0; j < _boardSize; j++)
             {
-                GridCell gridCell = _gridCells[i, j];
-                if (!Physics.Raycast(gridCell.transform.position, -Vector3.forward))
+                if (_gridCells[i,j].IsEmpty)
                 {
-                    //return;
+                    return;
                 }
             }
         }
+        Debug.Log("1");
     }
     
     private void CreateTriangles()

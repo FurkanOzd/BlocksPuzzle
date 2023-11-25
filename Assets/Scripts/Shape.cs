@@ -15,7 +15,7 @@
         private MeshCollider _meshCollider;
         
         private List<Triangle> _triangles = new List<Triangle>();
-
+        
         public Vector3 Position => transform.position;
         
         private Vector3 _bottomSnapPoint;
@@ -23,6 +23,10 @@
         private Vector3 _leftSnapPoint;
         private Vector3 _rightSnapPoint;
         private Vector3 _previousPosition;
+
+        private List<GridCell> _gridCells = new List<GridCell>();
+
+        private int _vertexCount = 0;
         
         public static event Action<Shape> ShapeSelectedEvent;
         public static event Action<Shape> ShapeReleasedEvent;
@@ -35,8 +39,20 @@
 
         private void OnMouseDown()
         {
+            //EmptyGridCells();
+            
             _previousPosition = transform.position;
+            
             ShapeSelectedEvent?.Invoke(this);
+        }
+
+        private void EmptyGridCells()
+        {
+            for (int index = 0; index < _gridCells.Count; index++)
+            {
+                _gridCells[index].Toggle(true);
+            }
+            _gridCells.Clear();
         }
 
         public void GenerateShapeMesh()
@@ -67,9 +83,10 @@
             
             Vector3[] vertices = mesh.vertices;
             Vector3 offset = mesh.bounds.center;
-
-            int vertexCount = vertices.Length;
-            for (int j = 0; j < vertexCount; j++)
+            
+            _vertexCount = vertices.Length;
+            
+            for (int j = 0; j < _vertexCount; j++)
             {
                 vertices[j] -= offset;
             }
@@ -77,7 +94,7 @@
             mesh.vertices = vertices;
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
-
+            
             _meshFilter.mesh = mesh;
             _meshCollider.sharedMesh = mesh;            
             CalculateSnapPoints();
@@ -137,5 +154,33 @@
         public void AddNewTriangle(Triangle triangle)
         {
             _triangles.Add(triangle);
+        }
+
+        public void CheckForGridFill()
+        {
+            Vector3[] vertices = _meshFilter.mesh.vertices;
+            for (int index = 0; index < _vertexCount; index++)
+            {
+                Ray ray = new Ray(transform.TransformPoint(vertices[index]), Vector3.forward);
+                if (Physics.Raycast(ray, out RaycastHit hitInfo))
+                {
+                    if (hitInfo.transform.TryGetComponent(out GridCell gridCell))
+                    {
+                        gridCell.Toggle(false);
+                        _gridCells.Add(gridCell);
+                    }
+                }
+            }
+        }
+
+        private void OnDrawGizmos()
+        {
+            Gizmos.color = Color.red;
+            Vector3[] vertices = _meshFilter.mesh.vertices;
+            
+            for (int index = 0; index < _vertexCount; index++)
+            {
+                Gizmos.DrawRay(new Ray(transform.TransformPoint(vertices[index]), Vector3.forward));
+            }
         }
     }
