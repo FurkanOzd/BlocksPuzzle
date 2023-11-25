@@ -15,4 +15,4 @@ MonoBehaviour:
   maxBoardSize: 5
   minBoardSize: 4
   maxPieceCount: 3
-  minPieceCount: 2
+  minPieceCount: 3

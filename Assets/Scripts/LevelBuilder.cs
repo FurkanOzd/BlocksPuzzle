@@ -53,7 +53,7 @@ public class LevelBuilder : MonoBehaviour
         InitBoard();
     }
     
-    private void CreateTriangles2()
+    private void CreateTriangles()
     {
         _triangles = new List<Triangle>();
         
@@ -100,7 +100,7 @@ public class LevelBuilder : MonoBehaviour
         
         _gridController.Initialize(_boardSize);
         
-        CreateTriangles2();
+        CreateTriangles();
         
         gridVertices = new List<Vector3>();
         for (int i = 0; i < _triangles.Count; i++)
