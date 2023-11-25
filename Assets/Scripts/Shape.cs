@@ -69,6 +69,7 @@
 
             mesh.vertices = vertices;
             mesh.RecalculateBounds();
+            mesh.RecalculateNormals();
 
             _meshFilter.mesh = mesh;
             _meshCollider.sharedMesh = mesh;

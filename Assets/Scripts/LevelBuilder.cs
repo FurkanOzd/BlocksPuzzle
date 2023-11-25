@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using DefaultNamespace;
+using UnityEngine;
 
 public class LevelBuilder : MonoBehaviour
 {
@@ -15,7 +15,8 @@ public class LevelBuilder : MonoBehaviour
     private Transform _shapesParent;
 
     [SerializeField]
-    GameObject pointInstance;
+    private GridCell _cellInstance;
+    
     [SerializeField] 
     GameObject levelCompleteUI;
 
@@ -27,81 +28,80 @@ public class LevelBuilder : MonoBehaviour
     [SerializeField]
     Transform shapeCreationPoint;
     
-    [SerializeField]
-    Material matInstance;
-    
     private List<Vector3> gridVertices;
+    List<Vector3> centerPoints;
 
     private List<Triangle> _triangles;
 
-    private int boardSize;
+    private Shape[] _shapes;
+
     private int _boardSize;
-    private int pieceCount;
+    private int _pieceCount;
     
-    List<Vector3> centerPoints;
-    Mesh main;
     public List<Difficulty> levelDifficulties;
     bool _isPlaying = false;
+
+    private GridController _gridController;
     
     void Start()
     {
         _shapeFactory = new ShapeFactory();
+
+        _gridController = new GridController(transform, _cellInstance, _gridtopLeftCorner.position,
+            _gridBottomRightCorner.position);
         
         InitBoard();
     }
+    
+    private void CreateTriangles2()
+    {
+        _triangles = new List<Triangle>();
+        
+        for (int i = 0; i < _boardSize - 1; i++)
+        {
+            for (int j = 0; j < _boardSize - 1; j++)
+            {
+                Vector3 p1 = _gridController.GetCellPosition(i,j);
+                Vector3 p2 = _gridController.GetCellPosition(i + 1, j);
+                Vector3 p3 = (p2 + _gridController.GetCellPosition(i, j + 1)) / 2;
+                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }));
+                
+                p1 = _gridController.GetCellPosition(i,j);
+                p2 = _gridController.GetCellPosition(i,j + 1);
+                
+                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 1, 2, 0 }));
 
-    void InitBoard()
+                p1 = _gridController.GetCellPosition(i+1,j);
+                p2 = _gridController.GetCellPosition(i+1,j + 1);
+                
+                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }));
+
+                p1 = _gridController.GetCellPosition(i,j + 1);
+                p2 = _gridController.GetCellPosition(i+1,j + 1);
+
+                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 1, 2 }));
+            }
+        }
+    }
+
+    private void InitBoard()
     {
         ClearBoard();
         
-        boardSize = 0;
-        
         Difficulty levelDiff = levelDifficulties[Random.Range(0, levelDifficulties.Count)];
         
-        boardSize = Random.Range(levelDiff.minBoardSize, levelDiff.maxBoardSize + 1);
-        pieceCount = Random.Range(levelDiff.minPieceCount, levelDiff.maxPieceCount + 1);
+        int boardSize = Random.Range(levelDiff.minBoardSize, levelDiff.maxBoardSize + 1);
+        _pieceCount = Random.Range(levelDiff.minPieceCount, levelDiff.maxPieceCount + 1);
 
         _boardSize = boardSize + 1;
 
-        Vector3 startPoint = _gridtopLeftCorner.position;     // Init Board Points
+        Vector3 startPoint = _gridtopLeftCorner.position;
         Vector3 endPoint = _gridBottomRightCorner.position;
-
-        for (int i = 0; i < _boardSize; i++)
-        {
-            for (int j = 0; j < _boardSize; j++)
-            {
-                Instantiate(pointInstance, startPoint + transform.right * ((endPoint - startPoint).x / (_boardSize - 1)) * j + transform.up * ((endPoint - startPoint).y / (_boardSize - 1)) * i, Quaternion.identity, transform);
-            }
-        }
-
-        _triangles = new List<Triangle>();
-        for (int i = 0; i < transform.childCount - _boardSize; i++)  //Create Triangles Based On Grid
-        {
-            if (i % _boardSize == _boardSize - 1)
-            {
-                continue;
-            }
-            Vector3 p1 = transform.GetChild(i).position;
-            Vector3 p2 = transform.GetChild(i + 1).position;
-            Vector3 p3 = (transform.GetChild(i + 1).position + transform.GetChild(i + _boardSize).position) / 2;
-            _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 1, 2 }));
-
-            p1 = transform.GetChild(i).position;
-            p2 = transform.GetChild(i + _boardSize).position;
-
-            _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 1, 0, 2 }));
-
-            p1 = transform.GetChild(i + 1).position;
-            p2 = transform.GetChild(i + 1 + _boardSize).position;
-
-            _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 1, 2 }));
-
-            p1 = transform.GetChild(i + _boardSize).position;
-            p2 = transform.GetChild(i + _boardSize + 1).position;
-
-            _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }));
-        }
-
+        
+        _gridController.Initialize(_boardSize);
+        
+        CreateTriangles2();
+        
         gridVertices = new List<Vector3>();
         for (int i = 0; i < _triangles.Count; i++)
         {
@@ -112,8 +112,8 @@ public class LevelBuilder : MonoBehaviour
             }
         }
 
-        Shape[] shapes = new Shape[pieceCount];
-        int[] randomPositions = new int[pieceCount];
+        _shapes = new Shape[_pieceCount];
+        int[] randomPositions = new int[_pieceCount];
 
         for (int i = 0; i < randomPositions.Length; i++)    //Get Random CenterPoint From Vertices For Shapes
         {
@@ -125,39 +125,34 @@ public class LevelBuilder : MonoBehaviour
             randomPositions[i] = randNum;
         }
 
-        for (int i = 0; i < shapes.Length; i++)
+        for (int i = 0; i < _shapes.Length; i++)
         {
             string shapeName = $"shape {i + 1}";
-            shapes[i] = _shapeFactory.Create(_shapeInstance, _shapesParent, _triangles[randomPositions[i]].centerPoint,
+            _shapes[i] = _shapeFactory.Create(_shapeInstance, _shapesParent, _triangles[randomPositions[i]].centerPoint,
                 new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f), 1), shapeName);
         }
         
         for (int i = 0; i < _triangles.Count; i++)                     //CreateRandomShapes;
         {
             float dist = Mathf.Infinity;
-            Shape selectedShape = null;
-            for (int j = 0; j < shapes.Length; j++)
+            Shape selectedShape = _shapes[0];
+            for (int j = 0; j < _shapes.Length; j++)
             {
-                if (dist > Vector3.Distance(_triangles[i].centerPoint, shapes[j].Position))
+                if (dist > Vector3.Distance(_triangles[i].centerPoint, _shapes[j].Position))
                 {
-                    dist = Vector3.Distance(_triangles[i].centerPoint, shapes[j].Position);
-                    selectedShape = shapes[j];
+                    dist = Vector3.Distance(_triangles[i].centerPoint, _shapes[j].Position);
+                    selectedShape = _shapes[j];
                 }
-            }
-
-            if (selectedShape == null)
-            {
-                continue;
             }
             selectedShape.AddNewTriangle(_triangles[i]);
         }
 
-        for (int i = 0; i < shapes.Length; i++)  //Create Shape Objects
+        for (int i = 0; i < _shapes.Length; i++)  //Create Shape Objects
         {
-            shapes[i].GenerateShapeMesh();
-            shapes[i].transform.position = shapeCreationPoint.position +
-                                           Vector3.right * (endPoint - startPoint).x / shapes.Length * i +
-                                           Vector3.forward * (i + 1) * -.1f;
+            _shapes[i].GenerateShapeMesh();
+            _shapes[i].transform.position = shapeCreationPoint.position +
+                                            Vector3.right * (endPoint - startPoint).x / _shapes.Length * i +
+                                            Vector3.forward * (i + 1) * -.1f;
         }
         
         centerPoints = new List<Vector3>();
@@ -167,7 +162,7 @@ public class LevelBuilder : MonoBehaviour
         }
         GameData data = new GameData();
         data.boardSize = boardSize;
-        data.pieceCount = shapes.Length;
+        data.pieceCount = _shapes.Length;
         data.difficulty = levelDiff.name;
         string json = JsonUtility.ToJson(data);
         Debug.Log(json);
@@ -202,6 +197,12 @@ public class LevelBuilder : MonoBehaviour
         else
             return shape.transform.position;
     }
+
+    private void CreateGridPoints()
+    {
+        
+    }
+    
     /*public void CheckGrid()
     {
         List<Vector3> mainShapeCenters = new List<Vector3>();
@@ -257,16 +258,18 @@ public class LevelBuilder : MonoBehaviour
     {
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
-            DestroyImmediate(transform.GetChild(i).gameObject);
+            Destroy(transform.GetChild(i).gameObject);
         }
-        GameObject[] shapes = GameObject.FindGameObjectsWithTag("Objects");
 
-        for (int i = shapes.Length - 1; i >= 0; i--)
+        if (_shapes != null)
         {
-            DestroyImmediate(shapes[i]);
-            shapes = GameObject.FindGameObjectsWithTag("Objects");
+            int shapeCount = _shapes.Length;
+            for (int i = shapeCount - 1; i >= 0; i--)
+            {
+                Destroy(_shapes[i].gameObject);
+            }
         }
-
+        
         if (_triangles != null)
             _triangles.Clear();
 

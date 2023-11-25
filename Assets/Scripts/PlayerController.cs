@@ -2,16 +2,20 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    private float _mouseZ;
-    
-    private Vector3 _clickOffset = Vector3.zero;
-
     private Shape _selectedShape;
 
+    private Camera _camera;
+    
+    private Vector3 _clickOffset = Vector3.zero;
+ 
     private bool _isAnyShapeSelected;
+    
+    private float _mouseZ;
 
     private void Start()
     {
+        _camera = Camera.main;
+        
         ListenEvents();
     }
 
@@ -66,6 +70,16 @@ public class PlayerController : MonoBehaviour
     {
         Vector3 mousePos = Input.mousePosition;
         mousePos.z = _mouseZ + (Vector3.forward * (-Camera.main.transform.position.z)).z;
-        return Camera.main.ScreenToWorldPoint(mousePos);
+        return _camera.ScreenToWorldPoint(mousePos);
+    }
+
+    private void UnsubscribeFromEvents()
+    {
+        Shape.OnShapeSelected -= OnShapeSelected;
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeFromEvents();
     }
 }
