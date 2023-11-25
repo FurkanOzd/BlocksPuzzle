@@ -28,11 +28,6 @@ public class LevelBuilder : MonoBehaviour
     [SerializeField]
     Transform shapeCreationPoint;
     
-    private List<Vector3> gridVertices;
-    List<Vector3> centerPoints;
-
-    private List<Triangle> _triangles;
-
     private Shape[] _shapes;
 
     private int _boardSize;
@@ -52,37 +47,6 @@ public class LevelBuilder : MonoBehaviour
         
         InitBoard();
     }
-    
-    private void CreateTriangles()
-    {
-        _triangles = new List<Triangle>();
-        
-        for (int i = 0; i < _boardSize - 1; i++)
-        {
-            for (int j = 0; j < _boardSize - 1; j++)
-            {
-                Vector3 p1 = _gridController.GetCellPosition(i,j);
-                Vector3 p2 = _gridController.GetCellPosition(i + 1, j);
-                Vector3 p3 = (p2 + _gridController.GetCellPosition(i, j + 1)) / 2;
-                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }));
-                
-                p1 = _gridController.GetCellPosition(i,j);
-                p2 = _gridController.GetCellPosition(i,j + 1);
-                
-                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 1, 2, 0 }));
-
-                p1 = _gridController.GetCellPosition(i+1,j);
-                p2 = _gridController.GetCellPosition(i+1,j + 1);
-                
-                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }));
-
-                p1 = _gridController.GetCellPosition(i,j + 1);
-                p2 = _gridController.GetCellPosition(i+1,j + 1);
-
-                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 1, 2 }));
-            }
-        }
-    }
 
     private void InitBoard()
     {
@@ -100,27 +64,17 @@ public class LevelBuilder : MonoBehaviour
         
         _gridController.Initialize(_boardSize);
         
-        CreateTriangles();
+        List<Triangle> triangles = _gridController.GetTriangles();
         
-        gridVertices = new List<Vector3>();
-        for (int i = 0; i < _triangles.Count; i++)
-        {
-            List<Vector3> temp = _triangles[i].GetVertices().ToList();
-            for (int j = 0; j < temp.Count; j++)
-            {
-                gridVertices.Add(temp[j]);
-            }
-        }
-
         _shapes = new Shape[_pieceCount];
         int[] randomPositions = new int[_pieceCount];
 
         for (int i = 0; i < randomPositions.Length; i++)    //Get Random CenterPoint From Vertices For Shapes
         {
-            int randNum = Random.Range(0, _triangles.Count);
+            int randNum = Random.Range(0, triangles.Count);
             while (randomPositions.Contains(randNum))
             {
-                randNum = Random.Range(0, _triangles.Count);
+                randNum = Random.Range(0, triangles.Count);
             }
             randomPositions[i] = randNum;
         }
@@ -128,23 +82,23 @@ public class LevelBuilder : MonoBehaviour
         for (int i = 0; i < _shapes.Length; i++)
         {
             string shapeName = $"shape {i + 1}";
-            _shapes[i] = _shapeFactory.Create(_shapeInstance, _shapesParent, _triangles[randomPositions[i]].centerPoint,
+            _shapes[i] = _shapeFactory.Create(_shapeInstance, _shapesParent, triangles[randomPositions[i]].CenterPoint,
                 new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f), 1), shapeName);
         }
         
-        for (int i = 0; i < _triangles.Count; i++)                     //CreateRandomShapes;
+        for (int i = 0; i < triangles.Count; i++)
         {
             float dist = Mathf.Infinity;
             Shape selectedShape = _shapes[0];
             for (int j = 0; j < _shapes.Length; j++)
             {
-                if (dist > Vector3.Distance(_triangles[i].centerPoint, _shapes[j].Position))
+                if (dist > Vector3.Distance(triangles[i].CenterPoint, _shapes[j].Position))
                 {
-                    dist = Vector3.Distance(_triangles[i].centerPoint, _shapes[j].Position);
+                    dist = Vector3.Distance(triangles[i].CenterPoint, _shapes[j].Position);
                     selectedShape = _shapes[j];
                 }
             }
-            selectedShape.AddNewTriangle(_triangles[i]);
+            selectedShape.AddNewTriangle(triangles[i]);
         }
 
         for (int i = 0; i < _shapes.Length; i++)  //Create Shape Objects
@@ -155,11 +109,6 @@ public class LevelBuilder : MonoBehaviour
                                             Vector3.forward * (i + 1) * -.1f;
         }
         
-        centerPoints = new List<Vector3>();
-        for (int i = 0; i < _triangles.Count; i++)
-        {
-            centerPoints.Add(_triangles[i].centerPoint);
-        }
         GameData data = new GameData();
         data.boardSize = boardSize;
         data.pieceCount = _shapes.Length;
@@ -169,38 +118,6 @@ public class LevelBuilder : MonoBehaviour
 
         File.WriteAllText(Application.dataPath+"//levelOutput.json",json);
         _isPlaying = true;
-    }
-
-    public Vector3 GetSnapPoint(GameObject shape)
-    {
-        float dist = Mathf.Infinity;
-        Vector3 distance = Vector3.zero;
-        for(int i = 0; i < shape.transform.childCount; i++)
-        {
-            for(int j = 0; j < gridVertices.Count; j++)
-            {
-                Transform child = shape.transform.GetChild(i);
-                Vector3 shapeChildPos = new Vector3(child.position.x,child.position.y,gridVertices[0].z);
-                if (Vector3.Distance(shapeChildPos, gridVertices[j]) < dist)
-                {
-                    dist = Vector3.Distance(shapeChildPos,gridVertices[j]);
-                    distance = gridVertices[j] - shapeChildPos;
-                }
-            }
-        }
-        if (distance.magnitude < .5f)
-        {
-            Vector3 pos = shape.transform.position + distance;
-            pos.z = -.5f;
-            return pos;
-        }
-        else
-            return shape.transform.position;
-    }
-
-    private void CreateGridPoints()
-    {
-        
     }
     
     /*public void CheckGrid()
@@ -269,11 +186,5 @@ public class LevelBuilder : MonoBehaviour
                 Destroy(_shapes[i].gameObject);
             }
         }
-        
-        if (_triangles != null)
-            _triangles.Clear();
-
-        if (gridVertices != null)
-            gridVertices.Clear();
     }
 }

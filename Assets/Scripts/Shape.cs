@@ -13,14 +13,19 @@
 
         [SerializeField] 
         private MeshCollider _meshCollider;
-
-        private Snap _snap = new Snap();
         
         private List<Triangle> _triangles = new List<Triangle>();
 
         public Vector3 Position => transform.position;
         
-        public static event Action<Shape> OnShapeSelected;
+        private Vector3 _bottomSnapPoint;
+        private Vector3 _topSnapPoint;
+        private Vector3 _leftSnapPoint;
+        private Vector3 _rightSnapPoint;
+        private Vector3 _previousPosition;
+        
+        public static event Action<Shape> ShapeSelectedEvent;
+        public static event Action<Shape> ShapeReleasedEvent;
 
         public void Construct(string shapeName, Color color)
         {
@@ -30,7 +35,8 @@
 
         private void OnMouseDown()
         {
-            OnShapeSelected?.Invoke(this);
+            _previousPosition = transform.position;
+            ShapeSelectedEvent?.Invoke(this);
         }
 
         public void GenerateShapeMesh()
@@ -62,78 +68,74 @@
             Vector3[] vertices = mesh.vertices;
             Vector3 offset = mesh.bounds.center;
 
-            for (int j = 0; j < vertices.Length; j++)
+            int vertexCount = vertices.Length;
+            for (int j = 0; j < vertexCount; j++)
             {
                 vertices[j] -= offset;
             }
-
+            
             mesh.vertices = vertices;
-            mesh.RecalculateBounds();
             mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
 
             _meshFilter.mesh = mesh;
-            _meshCollider.sharedMesh = mesh;
+            _meshCollider.sharedMesh = mesh;            
+            CalculateSnapPoints();
         }
 
         private void CalculateSnapPoints()
         {
             Vector3[] vertices = _meshFilter.mesh.vertices;
-
-            Vector3 firstVertexLocal = transform.localToWorldMatrix.MultiplyPoint3x4(vertices[0]);
-
-            _snap = new Snap();
-
-            _snap.bottom = _snap.top = _snap.left = _snap.right = firstVertexLocal;
+            
+            _bottomSnapPoint = _topSnapPoint = _leftSnapPoint = _rightSnapPoint = vertices[0];
 
             int verticesLength = vertices.Length;
             for (int index = 1; index < verticesLength; index++)
             {
-                Vector3 vertex = transform.localToWorldMatrix.MultiplyPoint3x4(vertices[index]);
+                Vector3 vertex = vertices[index];
                 
-                if (_snap.bottom.y < vertex.y)
+                if (_bottomSnapPoint.y < vertex.y)
                 {
-                    _snap.bottom = vertex;
+                    _bottomSnapPoint = vertex;
                 }
-                if (_snap.left.x < vertex.x)
+                if (_leftSnapPoint.x < vertex.x)
                 {
-                    _snap.left = vertex;
+                    _leftSnapPoint = vertex;
                 }
-                if (_snap.top.y > vertex.y)
+                if (_topSnapPoint.y > vertex.y)
                 {
-                    _snap.top = vertex;
+                    _topSnapPoint = vertex;
                 }
-                if (_snap.right.x > vertex.x)
+                if (_rightSnapPoint.x > vertex.x)
                 {
-                    _snap.right = vertex;
+                    _rightSnapPoint = vertex;
                 }
             }
         }
 
-        /*public Mesh GetMesh()
+        public void ResetToPreviousPosition()
         {
-            objectMesh = new Mesh();
-            CombineInstance[] combine = new CombineInstance[triangleMeshes.Count];
+            transform.position = _previousPosition;
+        }
 
-            for (int i = 0; i < combine.Count(); i++)
+        public void ReleaseShape()
+        {
+            ShapeReleasedEvent?.Invoke(this);
+        }
+        
+        public Vector3[] GetSnapPoints()
+        {
+            return new Vector3[]
             {
-                combine[i].mesh = triangleMeshes[i].mesh;
-                combine[i].transform = triangleMeshes[i].transform.localToWorldMatrix;
-            }
-            objectMesh.CombineMeshes(combine);
-
-            return objectMesh;
-        }*/
-
+                transform.TransformPoint(_leftSnapPoint),
+                transform.TransformPoint(_rightSnapPoint),
+                transform.TransformPoint(_topSnapPoint),
+                transform.TransformPoint(_bottomSnapPoint),
+            };
+        }
+        
         public void AddNewTriangle(Triangle triangle)
         {
             _triangles.Add(triangle);
-        }
-
-        private class Snap
-        {
-            public Vector3 left;
-            public Vector3 right;
-            public Vector3 top;
-            public Vector3 bottom;
         }
     }

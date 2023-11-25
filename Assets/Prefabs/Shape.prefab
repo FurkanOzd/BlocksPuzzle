@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3342804409161298345}
   - component: {fileID: -6542962071550346387}
   - component: {fileID: 4981211104107596016}
-  - component: {fileID: -968386543656350047}
+  - component: {fileID: -5388865659303746815}
   m_Layer: 0
   m_Name: Shape
   m_TagString: Untagged
@@ -49,7 +49,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _meshFilter: {fileID: -6542962071550346387}
   _meshRenderer: {fileID: 4981211104107596016}
-  _meshCollider: {fileID: -968386543656350047}
+  _meshCollider: {fileID: -5388865659303746815}
 --- !u!33 &-6542962071550346387
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -100,7 +100,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &-968386543656350047
+--- !u!64 &-5388865659303746815
 MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

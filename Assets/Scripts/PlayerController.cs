@@ -21,10 +21,10 @@ public class PlayerController : MonoBehaviour
 
     private void ListenEvents()
     {
-        Shape.OnShapeSelected += OnShapeSelected;
+        Shape.ShapeSelectedEvent += ShapeSelectedEvent;
     }
 
-    private void OnShapeSelected(Shape shape)
+    private void ShapeSelectedEvent(Shape shape)
     {
         _selectedShape = shape;
 
@@ -49,14 +49,14 @@ public class PlayerController : MonoBehaviour
         if (Input.GetMouseButton(0))
         {
             DragObject();
+            return;
         }
 
         if (Input.GetMouseButtonUp(0))
-        {
-            //selectedObject.transform.position = builder.GetSnapPoint(selectedObject);
+        { 
+            _selectedShape.ReleaseShape();
             _selectedShape = null;
             _isAnyShapeSelected = false;
-            //builder.CheckGrid();
         }
     }
 
@@ -75,7 +75,7 @@ public class PlayerController : MonoBehaviour
 
     private void UnsubscribeFromEvents()
     {
-        Shape.OnShapeSelected -= OnShapeSelected;
+        Shape.ShapeSelectedEvent -= ShapeSelectedEvent;
     }
 
     private void OnDestroy()

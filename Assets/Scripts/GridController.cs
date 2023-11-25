@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
-public class GridController
+public class GridController : IDisposable
 {
     private GridCell _gridCellInstance;
     
@@ -11,21 +15,27 @@ public class GridController
     private Vector3 _gridTopLeft;
     private Vector3 _gridBottomRight;
 
-    private Transform _cellParent;
+    private readonly Transform _cellParent;
+
+    private int _boardSize;
+
+    private List<Triangle> _triangles = new List<Triangle>();
     
     public GridController(Transform cellParent, GridCell gridCellInstance, Vector3 gridTopLeft, Vector3 gridBottomRight)
     {
         _gridTopLeft = gridTopLeft;
         _gridBottomRight = gridBottomRight;
-
         _cellParent = cellParent;
-
         _gridCellInstance = gridCellInstance;
-    }
         
+        ListenEvents();
+    }
+    
     public void Initialize(int boardSize)
     {
         ClearGrid();
+
+        _boardSize = boardSize;
         
         _gridCells = new GridCell[boardSize, boardSize];
 
@@ -40,20 +50,120 @@ public class GridController
                     Vector3.up * (pointDifference.y / (boardSize - 1)) * i, Quaternion.identity, _cellParent);
             }
         }
+        
+        CreateTriangles();
 
         _isInitialized = true;
     }
 
-    public Vector3 GetCellPosition(int i, int j)
+    private void ListenEvents()
+    {
+        Shape.ShapeReleasedEvent += OnShapeReleased;
+    }
+    
+    private void OnShapeReleased(Shape shape)
+    {
+        bool isSnapped = SnapShapeToGrid(shape);
+
+        if (isSnapped)
+        {
+            CheckGrid();
+        }
+    }
+
+    private bool SnapShapeToGrid(Shape shape)
+    {
+        Vector3[] snapPoints = shape.GetSnapPoints();
+
+        int snapCount = snapPoints.Length;
+
+        float closestPoint = Mathf.Infinity;
+        
+        Vector3 offset = Vector3.zero;
+        
+        for (int pointIndex = 0; pointIndex < snapCount; pointIndex++)
+        {
+            for (int i = 0; i < _boardSize; i++)
+            {
+                for (int j = 0; j < _boardSize; j++)
+                {
+                    float distance = Vector3.Distance(snapPoints[pointIndex], _gridCells[i, j].transform.position);
+                    if (distance < closestPoint)
+                    {
+                        closestPoint = distance;
+                        offset = _gridCells[i, j].transform.position - snapPoints[pointIndex];
+                    }
+                }
+            }
+        }
+
+        if (offset.magnitude > 1f)
+        {
+            shape.ResetToPreviousPosition();
+            return false;
+        }
+
+        Vector3 newPos = shape.transform.position + offset;
+        newPos.z = -1f;
+        shape.transform.position = newPos;
+
+        return true;
+    }
+
+    private void CheckGrid()
+    {
+        for (int i = 0; i < _boardSize; i++)
+        {
+            for (int j = 0; j < _boardSize; j++)
+            {
+                GridCell gridCell = _gridCells[i, j];
+                if (!Physics.Raycast(gridCell.transform.position, -Vector3.forward))
+                {
+                    //return;
+                }
+            }
+        }
+    }
+    
+    private void CreateTriangles()
+    {
+        for (int i = 0; i < _boardSize - 1; i++)
+        {
+            for (int j = 0; j < _boardSize - 1; j++)
+            {
+                Vector3 p1 = GetCellPosition(i,j);
+                Vector3 p2 = GetCellPosition(i + 1, j);
+                Vector3 p3 = (p2 + GetCellPosition(i, j + 1)) / 2;
+                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }));
+                
+                p1 = GetCellPosition(i,j);
+                p2 = GetCellPosition(i,j + 1);
+                
+                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 1, 2, 0 }));
+
+                p1 = GetCellPosition(i+1,j);
+                p2 = GetCellPosition(i+1,j + 1);
+                
+                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 2, 1 }));
+
+                p1 = GetCellPosition(i,j + 1);
+                p2 = GetCellPosition(i+1,j + 1);
+
+                _triangles.Add(new Triangle(new Vector3[] { p1, p2, p3 }, new int[] { 0, 1, 2 }));
+            }
+        }
+    }
+    
+    public List<Triangle> GetTriangles()
+    {
+        return _triangles;
+    }
+
+    private Vector3 GetCellPosition(int i, int j)
     {
         return _gridCells[i, j].transform.position;
     }
     
-    private void GetSnapPoint()
-    {
-        
-    }
-
     private void ClearGrid()
     {
         if (!_isInitialized)
@@ -61,14 +171,23 @@ public class GridController
             return;
         }
         
-        int boardSize = _gridCells.GetLength(0);
-        
-        for (int i = 0; i < boardSize; i++)
+        for (int i = 0; i < _boardSize; i++)
         {
-            for (int j = 0; j < boardSize; j++)
+            for (int j = 0; j < _boardSize; j++)
             {
                 Object.Destroy(_gridCells[i,j]);
             }
         }
+        _triangles.Clear();
+    }
+
+    private void UnsubscribeFromEvents()
+    {
+        Shape.ShapeReleasedEvent -= OnShapeReleased;
+    }
+
+    public void Dispose()
+    {
+        UnsubscribeFromEvents();
     }
 }

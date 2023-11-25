@@ -1,7 +1,7 @@
 using UnityEngine;
 public class Triangle
 {
-    public Vector3 centerPoint;
+    public Vector3 CenterPoint;
         
     private Vector3[] _vertices;
 
@@ -20,7 +20,7 @@ public class Triangle
             centerPointY += vertices[i].y;
         }
             
-        centerPoint = new Vector3(centerPointX / 3, centerPointY / 3, 0f);
+        CenterPoint = new Vector3(centerPointX / 3, centerPointY / 3, 0f);
         _indexes = indexOrder;
     }
         
