@@ -1,3 +1,4 @@
+using ShapeModule;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -12,7 +13,9 @@ public class PlayerController : MonoBehaviour
     
     private float _mouseZ;
 
-    private void Start()
+    private bool _canPlay;
+
+    private void Awake()
     {
         _camera = Camera.main;
         
@@ -21,10 +24,16 @@ public class PlayerController : MonoBehaviour
 
     private void ListenEvents()
     {
-        Shape.ShapeSelectedEvent += ShapeSelectedEvent;
+        Shape.ShapeSelectedEvent += OnShapeSelected;
+        GameManager.PlayStateChangedEvent += OnPlayStateChanged;
     }
 
-    private void ShapeSelectedEvent(Shape shape)
+    private void OnPlayStateChanged(bool canPlay)
+    {
+        _canPlay = canPlay;
+    }
+
+    private void OnShapeSelected(Shape shape)
     {
         _selectedShape = shape;
 
@@ -35,13 +44,14 @@ public class PlayerController : MonoBehaviour
 
     private void SetShapeClickOffset()
     {
-        _mouseZ = _selectedShape.transform.position.z;
-        _clickOffset = _selectedShape.transform.position - GetMouseWorldPos();
+        Vector3 shapePosition = _selectedShape.transform.position;
+        _mouseZ = shapePosition.z;
+        _clickOffset = shapePosition - GetMouseWorldPos();
     }
 
     void Update()
     {
-        if (!_isAnyShapeSelected)
+        if (!_isAnyShapeSelected || !_canPlay)
         {
             return;
         }
@@ -75,7 +85,8 @@ public class PlayerController : MonoBehaviour
 
     private void UnsubscribeFromEvents()
     {
-        Shape.ShapeSelectedEvent -= ShapeSelectedEvent;
+        Shape.ShapeSelectedEvent -= OnShapeSelected;
+        GameManager.PlayStateChangedEvent -= OnPlayStateChanged;
     }
 
     private void OnDestroy()

@@ -1,8 +1,11 @@
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using UnityEngine;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using GridModule;
+using UnityEngine;
 
+namespace ShapeModule
+{
     public class Shape : MonoBehaviour
     {
         [SerializeField] 
@@ -13,6 +16,9 @@
 
         [SerializeField] 
         private MeshCollider _meshCollider;
+        
+        [SerializeField] 
+        private LayerMask _pointLayerMask;
         
         private List<Triangle> _triangles = new List<Triangle>();
         
@@ -25,7 +31,8 @@
         private Vector3 _previousPosition;
 
         private List<GridCell> _gridCells = new List<GridCell>();
-
+        private List<GridCell> _gridCellsCache = new List<GridCell>();
+            
         private int _vertexCount = 0;
         
         public static event Action<Shape> ShapeSelectedEvent;
@@ -39,7 +46,7 @@
 
         private void OnMouseDown()
         {
-            //EmptyGridCells();
+            EmptyGridCells();
             
             _previousPosition = transform.position;
             
@@ -48,6 +55,8 @@
 
         private void EmptyGridCells()
         {
+            _gridCellsCache = _gridCells;
+            
             for (int index = 0; index < _gridCells.Count; index++)
             {
                 _gridCells[index].Toggle(true);
@@ -95,7 +104,7 @@
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             
-            _meshFilter.mesh = mesh;
+            _meshFilter.sharedMesh = mesh;
             _meshCollider.sharedMesh = mesh;            
             CalculateSnapPoints();
         }
@@ -133,6 +142,15 @@
         public void ResetToPreviousPosition()
         {
             transform.position = _previousPosition;
+
+            _gridCells = _gridCellsCache;
+
+            int cellCount = _gridCells.Count;
+
+            for (int index = 0; index < cellCount; index++)
+            {
+                _gridCells[index].Toggle(true);
+            }
         }
 
         public void ReleaseShape()
@@ -162,7 +180,7 @@
             for (int index = 0; index < _vertexCount; index++)
             {
                 Ray ray = new Ray(transform.TransformPoint(vertices[index]), Vector3.forward);
-                if (Physics.Raycast(ray, out RaycastHit hitInfo))
+                if (Physics.Raycast(ray, out RaycastHit hitInfo, 100f, _pointLayerMask.value))
                 {
                     if (hitInfo.transform.TryGetComponent(out GridCell gridCell))
                     {
@@ -171,6 +189,8 @@
                     }
                 }
             }
+
+            _gridCellsCache = _gridCells;
         }
 
         private void OnDrawGizmos()
@@ -184,3 +204,4 @@
             }
         }
     }
+}

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace DefaultNamespace
+namespace ShapeModule
 {
     public class ShapeFactory
     {

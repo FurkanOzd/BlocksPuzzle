@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: -6542962071550346387}
   - component: {fileID: 4981211104107596016}
   - component: {fileID: 395993228424176494}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Shape
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -50,7 +50,9 @@ MonoBehaviour:
   _meshFilter: {fileID: -6542962071550346387}
   _meshRenderer: {fileID: 4981211104107596016}
   _meshCollider: {fileID: 395993228424176494}
-  _polygonCollider2D: {fileID: 0}
+  _pointLayerMask:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!33 &-6542962071550346387
 MeshFilter:
   m_ObjectHideFlags: 0
