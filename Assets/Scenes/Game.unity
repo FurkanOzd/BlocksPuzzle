@@ -1163,6 +1163,8 @@ MonoBehaviour:
   _shapeInstance: {fileID: 3342804409161298345, guid: ef435d93efb181441bff7c038fa5487b, type: 3}
   levelDifficulties:
   - {fileID: 11400000, guid: 8373976291b52474e83056aa4341163b, type: 2}
+  - {fileID: 11400000, guid: 7ecdb00ef26062d4e835a3544385c9d1, type: 2}
+  - {fileID: 11400000, guid: 1ffb3a9cdb3e5f44f889cfd043187127, type: 2}
 --- !u!4 &1948318403
 Transform:
   m_ObjectHideFlags: 0
