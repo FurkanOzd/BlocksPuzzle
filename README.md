@@ -1,4 +1,4 @@
-# BlocksPuzzle
+# Blocks Puzzle Game
 
 
  Levels are generated procedurally.
